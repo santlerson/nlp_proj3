@@ -1,0 +1,14 @@
+name: final_project_env
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - pip
+  - pip:
+    - wandb
+    - torch==1.12.1
+    - matplotlib
+    - pandas
+    - transformers
+    - scipy
+    - scikit-learn
