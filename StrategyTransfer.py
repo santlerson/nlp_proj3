@@ -64,47 +64,54 @@ parser.add_argument('--OFFLINE_SIM_DATA_PATH', type=str, default="data/LLM_games
 parser.add_argument('--personas_balanced', type=str2bool, default=True, help='Personas balanced flag')
 parser.add_argument('--personas_group_number', type=int, default=-1, help='Personas group number')
 
+def main():
+    args = parser.parse_args()
 
-args = parser.parse_args()
+    main_run = wandb.init(project='Strategy_Transfer_TACL')
+    config = wandb.config
 
-main_run = wandb.init(project='Strategy_Transfer_TACL')
-config = wandb.config
+    config.update(args.__dict__)
 
-config.update(args.__dict__)
+    meta_features_map = {"features": {"EFs": {"FEATURES_PATH": config["SIMULATION_EFs_PATH"], "REVIEW_DIM": 37},
+                                      "GPT4": {"FEATURES_PATH": "data/GPT4_PCA_36.csv", "REVIEW_DIM": 36},
+                                      "BERT": {"FEATURES_PATH": "data/BERT_PCA_36.csv", "REVIEW_DIM": 36}},
+                         "architecture": {"LSTM": {"use_user_vector": True},
+                                          "transformer": {"use_user_vector": False},
+                                          "better_transformer": {"use_user_vector": False}
+                                          }
+                         }
 
-meta_features_map = {"features": {"EFs": {"FEATURES_PATH": config["SIMULATION_EFs_PATH"], "REVIEW_DIM": 37},
-                                  "GPT4": {"FEATURES_PATH": "data/GPT4_PCA_36.csv", "REVIEW_DIM": 36},
-                                  "BERT": {"FEATURES_PATH": "data/BERT_PCA_36.csv", "REVIEW_DIM": 36}},
-                     "architecture": {"LSTM": {"use_user_vector": True},
-                                      "transformer": {"use_user_vector": False}}
-                     }
+    for meta_feature, meta_feature_map in meta_features_map.items():
+        if config[meta_feature] not in meta_feature_map.keys():
+            raise NotImplementedError(meta_feature)
+        for config_feature, val in meta_feature_map[config[meta_feature]].items():
+            config[config_feature] = val
 
-for meta_feature, meta_feature_map in meta_features_map.items():
-    if config[meta_feature] not in meta_feature_map.keys():
-        raise NotImplementedError(meta_feature)
-    for config_feature, val in meta_feature_map[config[meta_feature]].items():
-        config[config_feature] = val
+    if "LLM_USERS_PER_PERSONA" in config.keys():
+        assert "offline_simulation_size" not in config.keys()
+        groups = personas.get_personas_in_group(config.personas_group_number)
+        config["offline_simulation_size"] = config["LLM_USERS_PER_PERSONA"] * len(groups)
 
-if "LLM_USERS_PER_PERSONA" in config.keys():
-    assert "offline_simulation_size" not in config.keys()
-    groups = personas.get_personas_in_group(config.personas_group_number)
-    config["offline_simulation_size"] = config["LLM_USERS_PER_PERSONA"] * len(groups)
+    if "online_simulation_factor" in config.keys():
+        config["online_simulation_size"] = (config["offline_simulation_size"] + config["human_train_size"]) * config["online_simulation_factor"]
 
-if "online_simulation_factor" in config.keys():
-    config["online_simulation_size"] = (config["offline_simulation_size"] + config["human_train_size"]) * config["online_simulation_factor"]
+    config["input_dim"] = config['REVIEW_DIM'] + STRATEGY_DIM
+    config["wandb_run_id"] = wandb.run.id
 
-config["input_dim"] = config['REVIEW_DIM'] + STRATEGY_DIM
-config["wandb_run_id"] = wandb.run.id
+    set_global_seed(config["seed"])
 
-set_global_seed(config["seed"])
+    all_user_points = []
+    all_bot_points = []
+    hotels = utils.Hotels(config)
 
-all_user_points = []
-all_bot_points = []
-hotels = utils.Hotels(config)
+    env_name = config["wandb_run_id"]
 
-env_name = config["wandb_run_id"]
+    if config["architecture"] == "LSTM":
+        env_model = environments.LSTM_env.LSTM_env(env_name, config=config)
+    elif config["architecture"] == "transformer":
+        env_model = environments.transformer_env.transformer_env(env_name, config=config)
+    elif config["architecture"] == "better_transformer":
+        env_model = environments.better_transformer_environment.BetterTransformerEnv(env_name, config=config)
 
-if config["architecture"] == "LSTM":
-    env_model = environments.LSTM_env.LSTM_env(env_name, config=config)
-elif config["architecture"] == "transformer":
-    env_model = environments.transformer_env.transformer_env(env_name, config=config)
+if __name__=="__main__":
+    main()
