@@ -53,7 +53,7 @@ parser.add_argument('--zero_knowledge', type=str2bool, default=True, help='Zero 
 parser.add_argument('--bots_per_user', type=int, default=6, help='Bots per user')
 parser.add_argument('--SIMULATION_EFs_PATH', type=str, default="data/EFs_by_GPT35.csv", help='Simulation EFs path')
 parser.add_argument('--favorite_topic_method', type=str, default="review", help='Favorite topic method')
-
+parser.add_argument('--weight_decay', type=float, default=0, help='Weight decay')
 # Advanced Projects' Features
 parser.add_argument('--agent', type=str, default="modelbasedRL", help='Agent type')
 parser.add_argument('--force_train', type=str2bool, default=True, help='Force training of environment')
@@ -63,6 +63,7 @@ parser.add_argument('--offline_simulation_size', type=int, default=0,
 parser.add_argument('--OFFLINE_SIM_DATA_PATH', type=str, default="data/LLM_games_personas.csv", help='LLM data path')
 parser.add_argument('--personas_balanced', type=str2bool, default=True, help='Personas balanced flag')
 parser.add_argument('--personas_group_number', type=int, default=-1, help='Personas group number')
+parser.add_argument('--save-path', type=str, help='Model save path')
 
 def main():
     args = parser.parse_args()
@@ -77,7 +78,9 @@ def main():
                                       "BERT": {"FEATURES_PATH": "data/BERT_PCA_36.csv", "REVIEW_DIM": 36}},
                          "architecture": {"LSTM": {"use_user_vector": True},
                                           "transformer": {"use_user_vector": False},
-                                          "better_transformer": {"use_user_vector": False}
+                                          "better_transformer": {"use_user_vector": False},
+                                          "simple_attention": {"use_user_vector": False},
+                                          "complex_attention": {"use_user_vector": False},
                                           }
                          }
 
@@ -112,6 +115,13 @@ def main():
         env_model = environments.transformer_env.transformer_env(env_name, config=config)
     elif config["architecture"] == "better_transformer":
         env_model = environments.better_transformer_environment.BetterTransformerEnv(env_name, config=config)
+    elif config["architecture"] == "simple_attention":
+        env_model = environments.simple_attention_environment.SimpleAttentionEnvironment(env_name, config=config)
+    elif config["architecture"]=="complex_attention":
+        env_model = environments.complex_attention_environment.ComplexAttentionEnvironment(env_name, config=config)
+    if config.get("save-path"):
+        torch.save(env_model.model.state_dict(), config["save-path"])
+
 
 if __name__=="__main__":
     main()

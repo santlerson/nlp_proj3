@@ -29,7 +29,6 @@ class transformer_env_ARC(nn.Module):
 
 
     def forward(self, vectors, **kwargs):
-        breakpoint()
         x = vectors["x"]
         x = self.fc(x)
         output = []

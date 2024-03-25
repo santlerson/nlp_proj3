@@ -171,13 +171,14 @@ class Environment:
                             device)
                         model_vectors["game_vector"] = self.model.game_vectors[batch["user_id"].to("cpu").numpy()].to(
                             device)
+                    padding_anti_mask = batch["action_taken"] != -100
                     if phase != "Test":
-                        model_output = self.model(model_vectors)
+                        model_output = self.model(model_vectors, padding_mask=~padding_anti_mask)
                     else:
                         with torch.no_grad():
-                            model_output = self.model(model_vectors)
+                            model_output = self.model(model_vectors, padding_mask=~padding_anti_mask)
                     output = model_output["output"]
-                    mask = (batch["action_taken"] != -100).flatten()
+                    mask = (padding_anti_mask).flatten()
                     relevant_predictions = output.reshape(batch_size * DATA_ROUNDS_PER_GAME, -1)[mask]
                     relevant_ground_truth = batch["action_taken"].flatten()[mask]
                     relevant_weight = batch["weight"][batch["is_sample"]]

@@ -39,8 +39,8 @@ STRATEGY_DIM = len(STRATEGIC_FEATURES_ORDER)
 DEEPRL_LEARNING_RATE = 4e-4
 
 DATA_ROUNDS_PER_GAME = 10
-SIMULATION_BATCH_SIZE = 4
-ENV_BATCH_SIZE = 4
+SIMULATION_BATCH_SIZE = 30
+ENV_BATCH_SIZE = 30
 
 SIMULATION_MAX_ACTIVE_USERS = 2000
 SIMULATION_TH = 9
@@ -83,5 +83,8 @@ bot2strategy_Y = {0: 132, 1: 23, 2: 107, 3: 43, 4: 17, 5: 93}
 
 bot_thresholds_X = {0: 10, 1: 7, 2: 9, 3: 8, 4: 8, 5: 9}
 bot_thresholds_Y = {0: 10, 1: 9, 2: 9, 3: 9, 4: 9, 5: 9}
+
+END_ROUND_FEATURES = ["didWin", "didGo", "is_hotel_good"] # + reaction_time_columns_names
+END_ROUND_ADDITIONAL_DIM = len(END_ROUND_FEATURES)
 
 AGENT_LEARNING_TH = 8

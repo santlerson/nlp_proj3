@@ -3,3 +3,5 @@ import environments.FC_env
 import environments.LSTM_env
 import environments.transformer_env
 import environments.better_transformer_environment
+import environments.simple_attention_environment
+import environments.complex_attention_environment

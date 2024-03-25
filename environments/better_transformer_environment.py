@@ -4,7 +4,7 @@ import torch
 import torch.nn.modules.transformer
 from environments import transformer_env
 from consts import *
-
+POSITIONAL_DIMS = 2
 class TransformerPredictor(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -14,7 +14,7 @@ class TransformerPredictor(nn.Module):
         hidden_dim = config["hidden_dim"]
         self.user_vectors = None
 
-        self.fc = nn.Sequential(nn.Linear(input_dim, hidden_dim),
+        self.fc = nn.Sequential(nn.Linear(input_dim, hidden_dim-POSITIONAL_DIMS),
                                 nn.Dropout(dropout),
                                 nn.ReLU(),
                                 ).double()
@@ -28,7 +28,7 @@ class TransformerPredictor(nn.Module):
                                                   nn.Linear(hidden_dim // 2, 2),
                                                   nn.LogSoftmax(dim=-1)).double()
 
-    def forward(self, vectors, **kwargs):
+    def forward(self, vectors, padding_mask=None, **kwargs):
         x = vectors["x"]
         x = self.fc(x)
         output = []
@@ -37,7 +37,11 @@ class TransformerPredictor(nn.Module):
         #     output.append(time_output)
         # output = torch.stack(output, 1)
         mask = self.create_causal_mask(x)
-        output = self.main_task(x, mask)
+        round_nums = torch.arange(0, x.size(1)).to(x.device)
+        exp_r = torch.exp(round_nums)
+        exp_minus_r = torch.exp(-round_nums)
+        x = torch.cat([x, exp_r.repeat(x.size(0), 1).unsqueeze(-1), exp_minus_r.repeat(x.size(0), 1).unsqueeze(-1)], dim=-1)
+        output = self.main_task(x, mask=mask, src_key_padding_mask=padding_mask)
         output = self.main_task_classifier(output)
         return {"output": output}
 

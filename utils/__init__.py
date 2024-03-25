@@ -177,7 +177,7 @@ class ResultSaver:
             'ID': torch.cat(self.ids).numpy().astype(int),
             'User_ID': torch.cat(self.user_id).numpy().astype(int),
             'Bot_Strategy': torch.cat(self.bot_strategy).numpy().astype(int),
-            'Accuracy': torch.cat(self.accuracy).numpy()
+            'Accuracy': torch.cat(self.accuracy).detach().numpy()
         })
         path = str(self.directory) + f"/{self.epoch}.csv"
         data.to_csv(path, index=False, header=True, float_format='%.4f')
